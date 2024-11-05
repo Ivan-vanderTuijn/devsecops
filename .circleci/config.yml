@@ -294,7 +294,10 @@ jobs:
       - run:
           name: Exécuter PHP Mess Detector
           command: |
-            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming
+            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt
+      - run:
+          name: Check report Creation
+          command: ls -l
       - store_artifacts:
           path: phpmd-report.txt
           destination: phpmd-report
