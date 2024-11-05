@@ -274,7 +274,7 @@ jobs:
           command: composer require --dev phploc/phploc
       - run:
           name: Run PHPLoc
-          command: ./vendor/bin/phploc src/ public/ > phploc-report.txt
+          command: ./vendor/bin/phploc --progress src/ public/
       - store_artifacts:
           path: phploc-report.txt
           destination: phploc-report
