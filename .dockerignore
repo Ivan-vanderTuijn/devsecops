@@ -1,7 +1,7 @@
 # Git
 .git
 .gitattributes
-.gitignore
+php-devops-tp/.gitignore
 
 # Github
 .github
@@ -23,7 +23,7 @@ Docker/docker-compose.yml
 Docker
 
 # Miscellanenous
-.env*
+.env.example
 !.env.example
 .editorconfig
 .phpunit.result.cache
