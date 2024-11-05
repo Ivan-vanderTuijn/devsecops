@@ -270,8 +270,8 @@ jobs:
     steps:
       - *attach_workspace
       - run:
-          name: Install PHPLoc
-          command: composer require --dev phploc/phploc
+          name: Install Specific Version of PHPLoc
+          command: composer require --dev phploc/phploc:^6.0.1
       - run:
           name: Run PHPLoc
           command: ./vendor/bin/phploc --progress src/ public/
