@@ -282,6 +282,23 @@ jobs:
           path: phploc-report.txt
           destination: phploc-report
 
+  metrics-phpmd:
+    executor: php-executor
+    steps:
+      - checkout
+      - run:
+          name: Télécharger PHP Mess Detector
+          command: |
+            wget -c https://phpmd.org/static/latest/phpmd.phar
+            chmod +x phpmd.phar  
+      - run:
+          name: Exécuter PHP Mess Detector
+          command: |
+            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming,unused
+      - store_artifacts:
+          path: phpmd-report.txt
+          destination: phpmd-report
+
 workflows:
   main_workflow:
     jobs:
@@ -327,6 +344,9 @@ workflows:
           requires:
             - build-setup
       - metrics-phploc:
+          requires:
+            - build-setup
+      - metrics-phpmd:
           requires:
             - build-setup
         
