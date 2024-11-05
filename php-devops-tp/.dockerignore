@@ -7,7 +7,7 @@
 .github
 
 # CircleCI
-.circleci
+../.circleci
 
  # JetBrains IDEs
 .idea
