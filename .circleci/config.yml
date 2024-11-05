@@ -257,10 +257,14 @@ jobs:
           command: composer require --dev phpmetrics/phpmetrics
       - run:
           name: Run PHP Metrics
-          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/
+          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/ public/
       - store_artifacts:
           path: phpmetrics-report.html
           destination: phpmetrics-report
+      - store_artifacts:
+          path: public
+          destination: public-files
+
 
 workflows:
   main_workflow:
@@ -300,7 +304,7 @@ workflows:
               only:
                 - /^release\/.*/
 
-  staging_working:
+  staging_workflow:
     jobs:
       - build-setup
       - metrics-phpmetrics:
