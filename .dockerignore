@@ -19,8 +19,8 @@ php-devops-tp/.gitignore
 .dockerignore
 Dockerfile
 docker-compose.override.yml
-Docker/docker-compose.yml
-Docker
+docker/docker-compose.yml
+docker
 
 # Miscellanenous
 .env.example
