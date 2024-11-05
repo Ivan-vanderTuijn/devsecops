@@ -248,6 +248,20 @@ jobs:
             EOF
 
 
+  metrics-phpmetrics:
+    executor: php-executor
+    steps:
+      - *attach_workspace
+      - run:
+          name: Install PHP Metrics
+          command: composer require --dev phpmetrics/phpmetrics
+      - run:
+          name: Run PHP Metrics
+          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/
+      - store_artifacts:
+          path: phpmetrics-report.html
+          destination: phpmetrics-report
+
 workflows:
   main_workflow:
     jobs:
@@ -286,6 +300,13 @@ workflows:
               only:
                 - /^release\/.*/
 
+  staging_working:
+    jobs:
+      - build-setup
+      - metrics-phpmetrics:
+          requires:
+            - build-setup
+        
 
   container_workflow:
     jobs:
