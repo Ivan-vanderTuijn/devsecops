@@ -268,14 +268,16 @@ jobs:
   metrics-phploc:
     executor: php-executor
     steps:
-      - *attach_workspace
+      - checkout
       - run:
-          name: Install Specific Version of PHPLoc
-          command: composer require --dev phploc/phploc:^8.0@stable
-
+          name: Download PHPLoc
+          command: |
+            wget -O phploc.phar https://phar.phpunit.de/phploc.phar
+            chmod +x phploc.phar  
       - run:
-          name: Run PHPLoc
-          command: ./vendor/bin/phploc --progress src/ public/
+          name: Execute PHPLoc
+          command: |
+            php phploc.phar src/ public/ > phploc-report.txt
       - store_artifacts:
           path: phploc-report.txt
           destination: phploc-report
