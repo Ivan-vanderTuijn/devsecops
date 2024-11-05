@@ -360,6 +360,7 @@ workflows:
                 - master
                 - main
                 - develop
+                - dev
                 - /^feature\/.*/
                 - /^release\/.*/
                 - /^hotfix\/.*/

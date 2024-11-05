@@ -1,10 +1,10 @@
 services:
   php-devsecops:
-    image: devsecops:1.0.0
+    image: ghcr.io/pedrocorp/devsecops:latest
     build:
-      context: ../php-devops-tp
-      dockerfile: Dockerfile
-    container_name: php-devsecops
+      context: ../
+      dockerfile: ./docker/Dockerfile
+    container_name: devsecops
     ports:
       - "9300:80"
     environment:
