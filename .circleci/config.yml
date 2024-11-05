@@ -271,7 +271,7 @@ jobs:
       - *attach_workspace
       - run:
           name: Install Specific Version of PHPLoc
-          command: composer require --dev phploc/phploc:^8.0
+          command: composer require --dev phploc/phploc:^8.0@stable
 
       - run:
           name: Run PHPLoc
