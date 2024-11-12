@@ -373,6 +373,9 @@ workflows:
       - metrics-phpmd:
           requires:
             - build-setup
+      - metrics-php-doc-check:
+          requires: 
+            -build-setup
         
 
   container_workflow:
