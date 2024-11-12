@@ -315,6 +315,10 @@ jobs:
           name: Execute PHP Doc Check
           command: |
             php php-doc-check.phar src/ --verbose > php-doc-check-report.txt
+            echo "php-doc-check a terminé avec le code de sortie $?" >> php-doc-check-report.txt
+            if [ ! -s php-doc-check-report.txt ]; then
+              echo "Aucun problème détecté ou fichier vide. php-doc-check a été exécuté correctement." > php-doc-check-report.txt
+            fi
       - run:
           name: check report creation
           command: ls -l
