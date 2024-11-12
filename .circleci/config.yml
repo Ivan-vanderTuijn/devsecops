@@ -314,7 +314,7 @@ jobs:
       - run:
           name: Execute PHP Doc Check
           command: |
-            php php-doc-check.phar src/ > php-doc-check-report.txt
+            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt
       - run:
           name: check report creation
           command: ls -l
