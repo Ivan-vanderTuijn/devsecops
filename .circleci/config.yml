@@ -287,12 +287,12 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Télécharger PHP Mess Detector
+          name: Download PHP Mess Detector
           command: |
             wget -c https://phpmd.org/static/latest/phpmd.phar
             chmod +x phpmd.phar  
       - run:
-          name: Exécuter PHP Mess Detector
+          name: Execute PHP Mess Detector
           command: |
             php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt
       - run:
@@ -301,6 +301,27 @@ jobs:
       - store_artifacts:
           path: phpmd-report.txt
           destination: phpmd-report
+    
+    metrics-php-doc-check:
+      executor: php-executor
+      steps:
+        - checkout
+        - run:
+            name: Download PHP Doc Check
+            command: |
+              wget -c https://github.com/Niels-NTG/php-doc-check/releases/latest/download/php-doc-check.phar -O php-doc-check.phar
+              chmod +x php-doc-check.phar
+        - run:
+            name: Execute PHP Doc Check
+            command: |
+              php php-doc-check.phar src/ > php-doc-check-report.txt
+        - run:
+            name: check report creation
+            command: ls -l
+        - store_artifacts:
+            path: php-doc-check-report.txt
+            destination: php-doc-check-report
+
 
 workflows:
   main_workflow:
