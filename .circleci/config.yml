@@ -375,7 +375,7 @@ workflows:
             - build-setup
       - metrics-php-doc-check:
           requires: 
-            -build-setup
+            - build-setup
         
 
   container_workflow:
