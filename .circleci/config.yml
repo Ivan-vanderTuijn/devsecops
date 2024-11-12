@@ -302,25 +302,25 @@ jobs:
           path: phpmd-report.txt
           destination: phpmd-report
     
-    metrics-php-doc-check:
-      executor: php-executor
-      steps:
-        - checkout
-        - run:
-            name: Download PHP Doc Check
-            command: |
-              wget -c https://github.com/Niels-NTG/php-doc-check/releases/latest/download/php-doc-check.phar -O php-doc-check.phar
-              chmod +x php-doc-check.phar
-        - run:
-            name: Execute PHP Doc Check
-            command: |
-              php php-doc-check.phar src/ > php-doc-check-report.txt
-        - run:
-            name: check report creation
-            command: ls -l
-        - store_artifacts:
-            path: php-doc-check-report.txt
-            destination: php-doc-check-report
+  metrics-php-doc-check:
+    executor: php-executor
+    steps:
+      - checkout
+      - run:
+          name: Download PHP Doc Check
+          command: |
+            wget -c https://github.com/Niels-NTG/php-doc-check/releases/latest/download/php-doc-check.phar -O php-doc-check.phar
+            chmod +x php-doc-check.phar
+      - run:
+          name: Execute PHP Doc Check
+          command: |
+            php php-doc-check.phar src/ > php-doc-check-report.txt
+      - run:
+          name: check report creation
+          command: ls -l
+      - store_artifacts:
+          path: php-doc-check-report.txt
+          destination: php-doc-check-report
 
 
 workflows:
