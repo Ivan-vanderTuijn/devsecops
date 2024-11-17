@@ -261,14 +261,6 @@ jobs:
             set -x
             ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< 'EOF'
             
-            # Export the environment variables passed from Circle CI
-            export GHCR_USERNAME="${GHCR_USERNAME}"
-            export GHCR_PAT="${GHCR_PAT}"
-            export CIRCLE_BRANCH="${CIRCLE_BRANCH}"
-            export CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}"
-            export CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}"
-            export PREPRODUCTION_CONTAINER_NAME="${PREPRODUCTION_CONTAINER_NAME}"
-            
             # Write environment variables to a file for debugging
             echo "GHCR_USERNAME: $GHCR_USERNAME" > /tmp/env_vars.txt
             echo "CIRCLE_BRANCH: $CIRCLE_BRANCH" >> /tmp/env_vars.txt
@@ -280,7 +272,6 @@ jobs:
             REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
             echo "REPOSITORY: $REPOSITORY" >> /tmp/env_vars.txt
             echo "TAG: $TAG" >> /tmp/env_vars.txt
-            
             
             # Display the file content
             cat /tmp/env_vars.txt
