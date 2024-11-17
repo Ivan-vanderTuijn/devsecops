@@ -418,19 +418,11 @@ commands:
             RESPONSE=$(curl --silent --request GET \
               --url "https://us.infisical.com/api/v3/secrets/raw/APP_SECRET?environment=${ENVIRONMENT}&workspaceSlug=${WORKSPACE_SLUG}" \
               --header "Authorization: Bearer ${INFISICAL_TOKEN}")
-            
-            echo "APP_SECRET: $RESPONSE"
-            
+          
             APP_SECRET=$(echo "$RESPONSE" | jq -r '.secret.secretValue')
             
-            echo "APP_SECRET: $APP_SECRET"
-            
             # Override APP_SECRET in .env file
-            echo "APP_SECRET=$APP_SECRET" > .env
-            
-            # Verify the change (optional)
-            echo "Updated .env content:"
-            cat .env
+            echo "APP_SECRET=\"$APP_SECRET\"" > .env
 
 staging_and_above: &staging_and_above
   filters:
