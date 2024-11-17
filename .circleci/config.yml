@@ -68,7 +68,11 @@ executors:
       - image: cimg/base:stable
         name: localhost
 
-
+parameters:
+  environment:
+    type: string
+    default: "staging"
+    enum: ["staging", "prod"]
 
 jobs:
   debug-info:
@@ -167,6 +171,9 @@ jobs:
 
 
   build-docker-image:
+    parameters:
+      environment:
+        type: string
     executor: builder-executor
     steps:
       - checkout
@@ -396,14 +403,6 @@ jobs:
       - store_artifacts:
           path: php-doc-check-report.txt
           destination: php-doc-check-report
-
-
-parameters:
-  environment:
-    type: string
-    default: "staging"
-    enum: ["staging", "prod"]
-
 
 commands:
   fetch-and-set-secrets:
