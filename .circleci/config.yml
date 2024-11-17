@@ -227,7 +227,7 @@ jobs:
           name: Deploy to AWS staging environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
+            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< 'EOF'
             
             # Docker login
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
@@ -259,26 +259,34 @@ jobs:
           name: Deploy to AWS pre-production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
+            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< 'EOF'
+            
+            # Export the environment variables passed from Circle CI
+            export GHCR_USERNAME="${GHCR_USERNAME}"
+            export GHCR_PAT="${GHCR_PAT}"
+            export CIRCLE_BRANCH="${CIRCLE_BRANCH}"
+            export CIRCLE_PROJECT_USERNAME="${CIRCLE_PROJECT_USERNAME}"
+            export CIRCLE_PROJECT_REPONAME="${CIRCLE_PROJECT_REPONAME}"
+            export PREPRODUCTION_CONTAINER_NAME="${PREPRODUCTION_CONTAINER_NAME}"
             
             # Write environment variables to a file for debugging
             echo "GHCR_USERNAME: $GHCR_USERNAME" > /tmp/env_vars.txt
-            echo "GHCR_PAT: $GHCR_PAT" >> /tmp/env_vars.txt
             echo "CIRCLE_BRANCH: $CIRCLE_BRANCH" >> /tmp/env_vars.txt
             echo "CIRCLE_PROJECT_USERNAME: $CIRCLE_PROJECT_USERNAME" >> /tmp/env_vars.txt
             echo "CIRCLE_PROJECT_REPONAME: $CIRCLE_PROJECT_REPONAME" >> /tmp/env_vars.txt
+            
+            # Calculate repository name and tag
+            TAG=$(echo "$CIRCLE_BRANCH" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
             REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
             echo "REPOSITORY: $REPOSITORY" >> /tmp/env_vars.txt
-            echo "PREPRODUCTION_CONTAINER_NAME: $PREPRODUCTION_CONTAINER_NAME" >> /tmp/env_vars.txt
-
+            echo "TAG: $TAG" >> /tmp/env_vars.txt
+            
+            
             # Display the file content
             cat /tmp/env_vars.txt
             
             # Docker login
-            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            
-            TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
-            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             
             # Pull the Docker image
             echo "Pulling image: $REPOSITORY:$TAG"
@@ -289,13 +297,18 @@ jobs:
             docker stop $PREPRODUCTION_CONTAINER_NAME || true
             docker rm $PREPRODUCTION_CONTAINER_NAME || true
             
+            # Stop and remove any existing container
+            echo "Stopping existing container (if any)..."
+            docker stop "$PREPRODUCTION_CONTAINER_NAME" || true
+            docker rm "$PREPRODUCTION_CONTAINER_NAME" || true
+            
             # Run the new container
             echo "Starting new container..."
             docker run -d \
-            --name $PREPRODUCTION_CONTAINER_NAME \
+            --name "$PREPRODUCTION_CONTAINER_NAME" \
             -p 80:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
-            $REPOSITORY:$TAG || exit 1
+            "$REPOSITORY:$TAG" || exit 1
             EOF
 
 
