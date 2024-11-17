@@ -428,6 +428,13 @@ dev_only: &dev_only
     branches:
       only: dev
 
+main_and_above: &main_and_above
+  filters:
+    branches:
+      only:
+        - main
+        - /^release\/.*/
+
 main_only: &main_only
   filters:
     branches:
@@ -473,12 +480,16 @@ workflows:
           requires:
             - security-check-dependencies
       - build-docker-image:
-          <<: *dev_and_above
+          <<: *dev_only
           requires:
             - metrics-phpmd
             - metrics-phploc
             - metrics-phpmetrics
             - metrics-php-doc-check
+      - build-docker-image:
+          <<: *main_and_above
+          requires:
+            - security-check-dependencies
       - push-docker-image: # Splitting the build and push to docker jobs
           <<: *dev_and_above
           requires:
