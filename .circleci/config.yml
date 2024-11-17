@@ -234,7 +234,8 @@ jobs:
             ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            docker pull $REPOSITORY:$CIRCLE_BRANCH
   
             # Stop and remove any existing container
             docker stop $STAGING_CONTAINER_NAME || true
@@ -245,7 +246,7 @@ jobs:
             --name $STAGING_CONTAINER_NAME \
             -p 80:80 \
             -v /path/to/data:/path/in/container \
-            ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            $REPOSITORY:$CIRCLE_BRANCH
             EOF
 
 
@@ -262,7 +263,8 @@ jobs:
             ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            docker pull $REPOSITORY:$CIRCLE_BRANCH
             
             # Stop and remove any existing container
             docker stop $PREPRODUCTION_CONTAINER_NAME || true
@@ -273,7 +275,7 @@ jobs:
             --name $PREPRODUCTION_CONTAINER_NAME \
             -p 80:80 \
             -v /path/to/data:/path/in/container \
-            ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            $REPOSITORY:$CIRCLE_BRANCH
             EOF
 
 
@@ -291,6 +293,8 @@ jobs:
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            docker pull $REPOSITORY:$CIRCLE_BRANCH
             
             # Stop and remove any existing container
             docker stop $PRODUCTION_CONTAINER_NAME || true
@@ -301,7 +305,7 @@ jobs:
             --name $PRODUCTION_CONTAINER_NAME \
             -p 80:80 \
             -v /path/to/data:/path/in/container \
-            ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
+            $REPOSITORY:$CIRCLE_BRANCH
             EOF
 
 
@@ -507,17 +511,17 @@ workflows:
       - deploy-ssh-staging:
           <<: *dev_only
           requires:
-            - build-docker-image-staging
+            - push-docker-image-staging
             - hold
       - deploy-ssh-pre-production: # main branch is used to resolve the issue if 2 PRs are merged at the same time on main (~HEAD changed between the build and the merge)
           <<: *main_only
           requires:
-            - build-docker-image-prod
+            - push-docker-image-prod
             - hold
       - deploy-ssh-production:
           <<: *release_only
           requires:
-            - build-docker-image-prod
+            - push-docker-image-prod
             - hold
 
   # container_workflow:
