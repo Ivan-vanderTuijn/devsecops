@@ -480,6 +480,7 @@ workflows:
           requires:
             - security-check-dependencies
       - build-docker-image:
+          name: build-docker-image-staging
           <<: *dev_only
           requires:
             - metrics-phpmd
@@ -487,6 +488,7 @@ workflows:
             - metrics-phpmetrics
             - metrics-php-doc-check
       - build-docker-image:
+          name: build-docker-image-prod
           <<: *main_and_above
           requires:
             - security-check-dependencies
