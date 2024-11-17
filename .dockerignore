@@ -23,8 +23,7 @@ docker/docker-compose.yml
 docker
 
 # Miscellanenous
-.env.example
-!.env.example
+.env
 .editorconfig
 .phpunit.result.cache
 .vagrant
