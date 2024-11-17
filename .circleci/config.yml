@@ -508,10 +508,8 @@ workflows:
       - build-docker-image:
           name: build-docker-image-staging
           environment: staging
-          when: always
           <<: *dev_only
           requires:
-            - metrics-phpmd
             - metrics-phploc
             - metrics-phpmetrics
             - metrics-php-doc-check
