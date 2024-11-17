@@ -411,20 +411,13 @@ commands:
         type: string
     steps:
       - run:
-          name: Install Infisical CLI
-          command: |
-            curl -1sLf \
-              'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' \
-              | sudo -E bash
-            sudo apt-get update && sudo apt-get install -y infisical
-      - run:
           name: Fetch secrets and update .env
           command: |
-            # Authenticate with Infisical using CircleCI environment variable
-            infisical login --token ${INFISICAL_TOKEN}
-            
             # Fetch the APP_SECRET for the specified environment
-            APP_SECRET=$(infisical secret get APP_SECRET --env=<< parameters.env >>)
+            ENVIROMENT=<< parameters.env >>
+            APP_SECRET=$(curl --silent --request GET \
+              --url "https://us.infisical.com/api/v3/secrets/raw/APP_SECRET_PRODUCTION?environment=${ENVIRONMENT}&workspaceSlug=${WORKSPACE_SLUG}" \
+              --header "Authorization: Bearer ${INFISICAL_TOKEN}"
             
             # Update or create .env file with the new APP_SECRET
             if [ -f .env ]; then
@@ -432,20 +425,6 @@ commands:
             else
               echo "APP_SECRET=${APP_SECRET}" > .env
             fi
-
-
-  #                                   f  d  m
-  # build-setup	                     ✅ ✅ ✅
-  # lint-phpcs	                     ✅ ✅ ✅
-  # security-check-dependencies	     ❌ ✅ ✅
-  # test-phpunit	                 ✅ ✅ ✅
-  # metrics-phpmetrics	             ❌ ✅ ✅
-  # metrics-phploc	                 ❌ ✅ ✅
-  # metrics-phpmd	                 ❌ ✅ ✅
-  # metrics-php-doc-check	         ❌ ✅ ✅
-  # build-docker-image	             ❌ ✅ ✅
-  # deploy-ssh-staging	             ❌ ✅ ❌
-  # deploy-ssh-production	         ❌ ❌ ✅
 
 staging_and_above: &staging_and_above
   filters:
