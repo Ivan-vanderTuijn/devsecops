@@ -417,7 +417,7 @@ commands:
             ENVIROMENT=<< parameters.env >>
             APP_SECRET=$(curl --silent --request GET \
               --url "https://us.infisical.com/api/v3/secrets/raw/APP_SECRET_PRODUCTION?environment=${ENVIRONMENT}&workspaceSlug=${WORKSPACE_SLUG}" \
-              --header "Authorization: Bearer ${INFISICAL_TOKEN}"
+              --header "Authorization: Bearer ${INFISICAL_TOKEN})"
             
             # Update or create .env file with the new APP_SECRET
             if [ -f .env ]; then
