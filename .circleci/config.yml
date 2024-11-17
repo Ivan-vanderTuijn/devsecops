@@ -184,17 +184,13 @@ jobs:
             TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
             docker build -f docker/Dockerfile -t $REPOSITORY:$TAG .
             docker save $REPOSITORY:$TAG | gzip > docker-image.tar.gz
-      - persist_to_workspace:
-          root: .
-          paths:
-            - docker-image.tar.gz
+      - *persist_to_workspace
 
 
   push-docker-image:
     executor: builder-executor
     steps:
-      - attach_workspace:
-          at: /workspace
+      - *attach_workspace
       - setup_remote_docker:
           # version: 20.10.23
           docker_layer_caching: true
