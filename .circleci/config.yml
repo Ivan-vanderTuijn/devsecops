@@ -493,25 +493,31 @@ workflows:
           requires:
             - security-check-dependencies
       - push-docker-image: # Splitting the build and push to docker jobs
-          <<: *dev_and_above
+          name: push-docker-image-staging
+          <<: *dev_only
           requires:
-            - build-docker-image
+            - build-docker-image-staging
+      - push-docker-image: # Splitting the build and push to docker jobs
+          name: push-docker-image-prod
+          <<: *main_and_above
+          requires:
+            - build-docker-image-prod
       - hold:
           type: approval
       - deploy-ssh-staging:
           <<: *dev_only
           requires:
-            - build-docker-image
+            - build-docker-image-staging
             - hold
       - deploy-ssh-pre-production: # main branch is used to resolve the issue if 2 PRs are merged at the same time on main (~HEAD changed between the build and the merge)
           <<: *main_only
           requires:
-            - build-docker-image
+            - build-docker-image-prod
             - hold
       - deploy-ssh-production:
           <<: *release_only
           requires:
-            - build-docker-image
+            - build-docker-image-prod
             - hold
 
   # container_workflow:
