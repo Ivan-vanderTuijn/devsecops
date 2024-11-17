@@ -208,7 +208,7 @@ jobs:
             TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
 
             # Load the Docker image from the tarball
-            gunzip -c /workspace/docker-image.tar.gz | docker load
+            gunzip -c docker-image.tar.gz | docker load
 
             # Login to GHCR
             echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
@@ -267,9 +267,9 @@ jobs:
             echo "CIRCLE_PROJECT_USERNAME: $CIRCLE_PROJECT_USERNAME" >> /tmp/env_vars.txt
             echo "CIRCLE_PROJECT_REPONAME: $CIRCLE_PROJECT_REPONAME" >> /tmp/env_vars.txt
             
-            # Calculate repository name and tag
-            TAG=$(echo "$CIRCLE_BRANCH" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
+            # Sanitize the repository name and branch name
             REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
             echo "REPOSITORY: $REPOSITORY" >> /tmp/env_vars.txt
             echo "TAG: $TAG" >> /tmp/env_vars.txt
             
