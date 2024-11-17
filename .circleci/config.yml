@@ -230,7 +230,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
             docker pull $REPOSITORY:$CIRCLE_BRANCH
   
             # Stop and remove any existing container
@@ -264,7 +264,8 @@ jobs:
             echo $CIRCLE_BRANCH
             
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
+            echo $REPOSITORY
             docker pull $REPOSITORY:$CIRCLE_BRANCH
             
             # Stop and remove any existing container
@@ -275,7 +276,7 @@ jobs:
             docker run -d \
             --name $PREPRODUCTION_CONTAINER_NAME \
             -p 80:80 \
-            -v /path/to/data:/path/in/container \
+            -v ./volume/database:/var/www/html/database \
             $REPOSITORY:$CIRCLE_BRANCH
             EOF
 
@@ -294,7 +295,7 @@ jobs:
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
-            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
             docker pull $REPOSITORY:$CIRCLE_BRANCH
             
             # Stop and remove any existing container
