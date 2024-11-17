@@ -265,7 +265,8 @@ jobs:
             echo "GHCR_USERNAME: $GHCR_USERNAME" > /tmp/env_vars.txt
             echo "GHCR_PAT: $GHCR_PAT" >> /tmp/env_vars.txt
             echo "CIRCLE_BRANCH: $CIRCLE_BRANCH" >> /tmp/env_vars.txt
-            echo "REPOSITORY: ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" >> /tmp/env_vars.txt
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            echo "REPOSITORY: $REPOSITORY" >> /tmp/env_vars.txt
             echo "PREPRODUCTION_CONTAINER_NAME: $PREPRODUCTION_CONTAINER_NAME" >> /tmp/env_vars.txt
 
             # Display the file content
