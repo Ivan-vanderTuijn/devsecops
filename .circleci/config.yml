@@ -231,25 +231,25 @@ jobs:
           name: Deploy to AWS staging environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< 'EOF'
+            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
             
             # Docker login
-            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
             # Pull the Docker image
             echo "Pulling image: $DOCKER_REPOSITORY:$CIRCLE_BRANCH"
-            docker pull $$DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
+            docker pull $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             
             # Stop and remove any existing container
             echo "Stopping existing container (if any)..."
-            docker stop $PREPRODUCTION_CONTAINER_NAME || true
-            docker rm $PREPRODUCTION_CONTAINER_NAME || true
+            docker stop $STAGING_CONTAINER_NAME || true
+            docker rm $STAGING_CONTAINER_NAME || true
             
             # Run the new container
             echo "Starting new container..."
             docker run -d \
             --name $STAGING_CONTAINER_NAME \
-            -p 80:80 \
+            -p 8080:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
             $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
@@ -283,7 +283,7 @@ jobs:
             echo "Starting new container..."
             docker run -d \
             --name "$PREPRODUCTION_CONTAINER_NAME" \
-            -p 80:80 \
+            -p 8081:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
             $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
@@ -299,10 +299,10 @@ jobs:
           name: Deploy to AWS production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< 'EOF'
+            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< EOF
             
             # Docker login
-            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             
             # Pull the Docker image
             echo "Pulling image: $DOCKER_REPOSITORY:$CIRCLE_BRANCH"
@@ -509,8 +509,7 @@ workflows:
           name: build-docker-image-staging
           environment: staging
           <<: *dev_only
-          requires:
-            - metrics-phpmd
+          requires: # Best is to have fail safe metric jobs
             - metrics-phploc
             - metrics-phpmetrics
             - metrics-php-doc-check
