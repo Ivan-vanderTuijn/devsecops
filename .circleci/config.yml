@@ -231,7 +231,7 @@ jobs:
           name: Deploy to AWS staging environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST << EOF
+            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
@@ -248,6 +248,7 @@ jobs:
             ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
             EOF
 
+
   deploy-ssh-pre-production:
     executor: simple-executor
     steps:
@@ -258,7 +259,7 @@ jobs:
           name: Deploy to AWS pre-production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST << EOF
+            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
@@ -275,6 +276,7 @@ jobs:
             ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
             EOF
 
+
   deploy-ssh-production:
     executor: simple-executor
     steps:
@@ -285,7 +287,7 @@ jobs:
           name: Deploy to AWS production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST << EOF
+            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
@@ -320,6 +322,7 @@ jobs:
           path: public
           destination: public-files
 
+
   metrics-phploc:
     executor: php-executor
     steps:
@@ -336,6 +339,7 @@ jobs:
       - store_artifacts:
           path: phploc-report.txt
           destination: phploc-report
+
 
   metrics-phpmd:
     executor: php-executor
@@ -356,7 +360,8 @@ jobs:
       - store_artifacts:
           path: phpmd-report.txt
           destination: phpmd-report
-    
+
+
   metrics-php-doc-check:
     executor: php-executor
     steps:
