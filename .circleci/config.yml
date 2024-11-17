@@ -259,7 +259,7 @@ jobs:
           name: Deploy to AWS pre-production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< 'EOF'
+            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
             
             # Write environment variables to a file for debugging
             echo "GHCR_USERNAME: $GHCR_USERNAME" > /tmp/env_vars.txt
