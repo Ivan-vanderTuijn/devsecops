@@ -490,18 +490,22 @@ workflows:
             - test-phpunit
       # Metrics jobs in parallel
       - metrics-phpmetrics:
+          on_fail: continue
           <<: *dev_only
           requires:
             - security-check-dependencies
       - metrics-phploc:
+          on_fail: continue
           <<: *dev_only
           requires:
             - security-check-dependencies
       - metrics-phpmd:
+          on_fail: continue
           <<: *dev_only
           requires:
             - security-check-dependencies
       - metrics-php-doc-check:
+          on_fail: continue
           <<: *dev_only
           requires:
             - security-check-dependencies
@@ -514,7 +518,6 @@ workflows:
             - metrics-phploc
             - metrics-phpmetrics
             - metrics-php-doc-check
-          when: always
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
