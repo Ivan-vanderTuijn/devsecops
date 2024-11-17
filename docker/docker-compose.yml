@@ -2,8 +2,8 @@ services:
   php-devsecops:
     image: devsecops:1.0.0
     build:
-      context: ../php-devops-tp
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: ./docker/Dockerfile
     container_name: php-devsecops
     ports:
       - "9300:80"
