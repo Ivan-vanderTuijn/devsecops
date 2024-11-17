@@ -227,10 +227,10 @@ jobs:
           name: Deploy to AWS staging environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST <<- 'EOF'
+            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
             # Pull the Docker image
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
             docker pull $REPOSITORY:$CIRCLE_BRANCH
   
             # Stop and remove any existing container
@@ -241,7 +241,7 @@ jobs:
             docker run -d \
             --name $STAGING_CONTAINER_NAME \
             -p 80:80 \
-            -v /path/to/data:/path/in/container \
+            -v ./volume/database:/var/www/html/database \
             $REPOSITORY:$CIRCLE_BRANCH
             EOF
 
@@ -256,7 +256,7 @@ jobs:
           name: Deploy to AWS pre-production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST <<- 'EOF'
+            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
             # Pull the Docker image
             echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
             echo $GHCR_USERNAME
@@ -264,8 +264,7 @@ jobs:
             echo $CIRCLE_BRANCH
             
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
-            echo $REPOSITORY
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
             docker pull $REPOSITORY:$CIRCLE_BRANCH
             
             # Stop and remove any existing container
@@ -291,23 +290,30 @@ jobs:
           name: Deploy to AWS production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST <<- 'EOF'
-            # Pull the Docker image
-            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
-            docker pull ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME:$CIRCLE_BRANCH
-            REPOSITORY="ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_'
-            docker pull $REPOSITORY:$CIRCLE_BRANCH
+            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< 'EOF'
             
+            # Docker login
+            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
+            
+            TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
+            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
+            
+            # Pull the Docker image
+            echo "Pulling image: $REPOSITORY:$TAG"
+            docker pull $REPOSITORY:$TAG || exit 1
+      
             # Stop and remove any existing container
+            echo "Stopping existing container (if any)..."
             docker stop $PRODUCTION_CONTAINER_NAME || true
             docker rm $PRODUCTION_CONTAINER_NAME || true
             
             # Run the new container
+            echo "Starting new container..."
             docker run -d \
             --name $PRODUCTION_CONTAINER_NAME \
             -p 80:80 \
-            -v /path/to/data:/path/in/container \
-            $REPOSITORY:$CIRCLE_BRANCH
+            -v "$(pwd)/volume/database:/var/www/html/database" \
+            $REPOSITORY:$TAG || exit 1
             EOF
 
 
