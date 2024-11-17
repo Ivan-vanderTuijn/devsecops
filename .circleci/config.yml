@@ -68,7 +68,11 @@ executors:
       - image: cimg/base:stable
         name: localhost
 
-
+parameters:
+  environment:
+    type: string
+    default: "staging"
+    enum: ["staging", "prod"]
 
 jobs:
   debug-info:
@@ -129,7 +133,6 @@ jobs:
           destination: phpcs-report
 
 
-
   security-check-dependencies:
     executor: php-executor
     steps:
@@ -145,7 +148,6 @@ jobs:
       - store_artifacts:
           path: security-report.json
           destination: security-report
-
 
 
   test-phpunit:
@@ -169,43 +171,54 @@ jobs:
 
 
   build-docker-image:
+    parameters:
+      environment:
+        type: string
     executor: builder-executor
     steps:
       - checkout
       - setup_remote_docker:
-          # version: 20.10.23
           docker_layer_caching: true
+      - fetch-and-set-secrets:
+          env: << parameters.environment >>
       - run:
-          name: Build and Push Docker Image to GHCR (GitHub Container Registry)
+          name: Build Docker Image
           command: |
             if [ ! -z "$SKIP_BUILD" ]; then
               echo "Skipping build"
               circleci step halt
               exit 0
             fi
+            
+            docker build -f docker/Dockerfile -t $DOCKER_REPOSITORY:$CIRCLE_BRANCH .
+            docker save $DOCKER_REPOSITORY:$CIRCLE_BRANCH | gzip > docker-image.tar.gz
+      - *persist_to_workspace
 
-            # Sanitize the repository name and branch name
-            REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
-            TAG=$(echo $CIRCLE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr -cd '[:alnum:]._-' | cut -c 1-128)
+
+  push-docker-image:
+    executor: builder-executor
+    steps:
+      - *attach_workspace
+      - setup_remote_docker:
+          # version: 20.10.23
+          docker_layer_caching: true
+      - run:
+          name: Load and Push Docker Image to GHCR
+          command: |
+            if [ ! -f "docker-image.tar.gz" ]; then
+              echo "No image artifact found, skipping push."
+              circleci step halt
+              exit 0
+            fi
+
+            # Load the Docker image from the tarball
+            gunzip -c docker-image.tar.gz | docker load
 
             # Login to GHCR
             echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
-            # Build the Docker image
-            docker build \
-            -f docker/Dockerfile \
-            -t $REPOSITORY:$TAG \
-            --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-            --build-arg TAG="${TAG}" \
-            --build-arg GIT_COMMIT=$(git rev-parse -q --verify HEAD) \
-            --build-arg GIT_URL=$(echo ${CIRCLE_REPOSITORY_URL} | sed -e 's/^git@/https:\/\//g' -e 's/\.git$//g' -e 's/:/\//g') \
-            --build-arg SQLITE_VERSION=3430200 \
-            --build-arg SQLITE_YEAR=2023 \
-            --build-arg PROJECT_USERNAME=$CIRCLE_PROJECT_USERNAME \
-            .
-
             # Push the Docker image
-            docker push $REPOSITORY:$TAG
+            docker push $DOCKER_REPOSITORY:$CIRCLE_BRANCH
 
 
   deploy-ssh-staging:
@@ -214,37 +227,99 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "${STAGING_SSH_FINGERPRINT}"
-      - deploy:
-          name: Deploy to AWS
+      - run:
+          name: Deploy to AWS staging environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< EOF
-            PHP_FPM_VERSION=$(php -v | head -n 1 | cut -d ' ' -f 2 | cut -d '.' -f 1-2)
-            cd $STAGING_DEPLOY_DIRECTORY
-            git pull origin $CIRCLE_BRANCH
-            composer install --optimize-autoloader --no-interaction --prefer-dist
-            (flock -w 10 9 || exit 1; sudo -S service php${PHP_FPM_VERSION}-fpm restart ) 9>/tmp/fpm.lock
+            ssh -o StrictHostKeyChecking=no $STAGING_SSH_USER@$STAGING_SSH_HOST \<< 'EOF'
+            
+            # Docker login
+            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
+
+            # Pull the Docker image
+            echo "Pulling image: $DOCKER_REPOSITORY:$CIRCLE_BRANCH"
+            docker pull $$DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
+            
+            # Stop and remove any existing container
+            echo "Stopping existing container (if any)..."
+            docker stop $PREPRODUCTION_CONTAINER_NAME || true
+            docker rm $PREPRODUCTION_CONTAINER_NAME || true
+            
+            # Run the new container
+            echo "Starting new container..."
+            docker run -d \
+            --name $STAGING_CONTAINER_NAME \
+            -p 80:80 \
+            -v "$(pwd)/volume/database:/var/www/html/database" \
+            $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
 
-  #  deploy-ssh-production:
-  # It's up to you :)
-  # TODO : and improve, its copy pasted from staging job
+
+  deploy-ssh-pre-production:
+    executor: simple-executor
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "${PREPRODUCTION_SSH_FINGERPRINT}"
+      - run:
+          name: Deploy to AWS pre-production environment
+          command: |
+            set -x
+            ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
+            
+            # Docker login
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            
+            # Pull the Docker image
+            echo "Pulling image: $DOCKER_REPOSITORY:$CIRCLE_BRANCH"
+            docker pull $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
+            
+             # Stop and remove any existing container
+            echo "Stopping existing container (if any)..."
+            docker stop $PREPRODUCTION_CONTAINER_NAME || true
+            docker rm $PREPRODUCTION_CONTAINER_NAME || true
+            
+            # Run the new container
+            echo "Starting new container..."
+            docker run -d \
+            --name "$PREPRODUCTION_CONTAINER_NAME" \
+            -p 80:80 \
+            -v "$(pwd)/volume/database:/var/www/html/database" \
+            $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
+            EOF
+
+
   deploy-ssh-production:
     executor: simple-executor
     steps:
       - add_ssh_keys:
           fingerprints:
             - "${PRODUCTION_SSH_FINGERPRINT}"
-      - deploy:
-          name: Deploy to AWS
+      - run:
+          name: Deploy to AWS production environment
           command: |
             set -x
-            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< EOF
-            PHP_FPM_VERSION=$(php -v | head -n 1 | cut -d ' ' -f 2 | cut -d '.' -f 1-2)
-            cd $PRODUCTION_DEPLOY_DIRECTORY
-            git pull origin $CIRCLE_BRANCH 
-            composer install --optimize-autoloader --no-interaction --prefer-dist
-            (flock -w 10 9 || exit 1; sudo -S service php${PHP_FPM_VERSION}-fpm restart ) 9>/tmp/fpm.lock
+            ssh -o StrictHostKeyChecking=no $PRODUCTION_SSH_USER@$PRODUCTION_SSH_HOST \<< 'EOF'
+            
+            # Docker login
+            docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
+            
+            # Pull the Docker image
+            echo "Pulling image: $DOCKER_REPOSITORY:$CIRCLE_BRANCH"
+            docker pull $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
+      
+            # Stop and remove any existing container
+            echo "Stopping existing container (if any)..."
+            docker stop $PRODUCTION_CONTAINER_NAME || true
+            docker rm $PRODUCTION_CONTAINER_NAME || true
+            
+            # Run the new container
+            echo "Starting new container..."
+            docker run -d \
+            --name $PRODUCTION_CONTAINER_NAME \
+            -p 80:80 \
+            -v "$(pwd)/volume/database:/var/www/html/database" \
+            $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
 
 
@@ -265,6 +340,7 @@ jobs:
           path: public
           destination: public-files
 
+
   metrics-phploc:
     executor: php-executor
     steps:
@@ -282,22 +358,118 @@ jobs:
           path: phploc-report.txt
           destination: phploc-report
 
+
   metrics-phpmd:
     executor: php-executor
     steps:
       - checkout
       - run:
-          name: Télécharger PHP Mess Detector
+          name: Download PHP Mess Detector
           command: |
             wget -c https://phpmd.org/static/latest/phpmd.phar
             chmod +x phpmd.phar  
       - run:
-          name: Exécuter PHP Mess Detector
+          name: Execute PHP Mess Detector
           command: |
-            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming
+            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt
+      - run:
+          name: Check report Creation
+          command: ls -l
       - store_artifacts:
           path: phpmd-report.txt
           destination: phpmd-report
+
+
+  metrics-php-doc-check:
+    executor: php-executor
+    steps:
+      - checkout
+      - run:
+          name: Download PHP Doc Check
+          command: |
+            wget -c https://github.com/Niels-NTG/php-doc-check/releases/latest/download/php-doc-check.phar -O php-doc-check.phar
+            chmod +x php-doc-check.phar
+      - run:
+          name: Execute PHP Doc Check
+          command: |
+            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt
+            echo "php-doc-check finished with exit code $?" >> php-doc-check-report.txt
+            if [ ! -s php-doc-check-report.txt ]; then
+              echo "No problems detected or empty file. php-doc-check was executed successfully." > php-doc-check-report.txt
+            fi
+      - run:
+          name: check report creation
+          command: ls -l
+      - store_artifacts:
+          path: php-doc-check-report.txt
+          destination: php-doc-check-report
+
+commands:
+  fetch-and-set-secrets:
+    parameters:
+      env:
+        type: string
+    steps:
+      - run:
+          name: Fetch secrets and update .env
+          command: |
+            # Fetch the APP_SECRET for the specified environment
+            ENVIRONMENT=<< parameters.env >>
+            RESPONSE=$(curl --silent --request GET \
+              --url "https://us.infisical.com/api/v3/secrets/raw/APP_SECRET?environment=${ENVIRONMENT}&workspaceSlug=${WORKSPACE_SLUG}" \
+              --header "Authorization: Bearer ${INFISICAL_TOKEN}")
+          
+            # Extract the APP_SECRET from the response
+            APP_SECRET=$(echo "$RESPONSE" | jq -r '.secret.secretValue')
+            
+            # Override APP_SECRET in .env file
+            echo "APP_SECRET=\"$APP_SECRET\"" > .env
+
+staging_and_above: &staging_and_above
+  filters:
+    branches:
+      only:
+       - /^feature\/.*/
+       - dev
+       - main
+       - /^release\/.*/
+
+staging_and_dev: &staging_and_dev
+  filters:
+    branches:
+      only:
+        - /^feature\/.*/
+        - dev
+
+dev_and_above: &dev_and_above
+  filters:
+    branches:
+      only:
+        - dev
+        - main
+        - /^release\/.*/
+
+dev_only: &dev_only
+  filters:
+    branches:
+      only: dev
+
+main_and_above: &main_and_above
+  filters:
+    branches:
+      only:
+        - main
+        - /^release\/.*/
+
+main_only: &main_only
+  filters:
+    branches:
+      only: main
+
+release_only: &release_only
+  filters:
+    branches:
+      only: /^release\/.*/
 
 workflows:
   main_workflow:
@@ -305,63 +477,85 @@ workflows:
       - debug-info
       - build-setup
       - lint-phpcs:
-          requires:
-            - build-setup
-      - security-check-dependencies:
+          <<: *staging_and_dev
           requires:
             - build-setup
       - test-phpunit:
+          <<: *staging_and_above
           requires:
             - build-setup
+      - security-check-dependencies:
+          <<: *dev_and_above
+          requires:
+            - test-phpunit
+      # Metrics jobs in parallel
+      - metrics-phpmetrics:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
+      - metrics-phploc:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
+      - metrics-phpmd:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
+      - metrics-php-doc-check:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
+      - build-docker-image:
+          name: build-docker-image-staging
+          environment: staging
+          <<: *dev_only
+          requires:
+            - metrics-phpmd
+            - metrics-phploc
+            - metrics-phpmetrics
+            - metrics-php-doc-check
+      - build-docker-image:
+          name: build-docker-image-prod
+          environment: prod
+          <<: *main_and_above
+          requires:
+            - security-check-dependencies
+      - push-docker-image: # Splitting the build and push to docker jobs
+          name: push-docker-image-staging
+          <<: *dev_only
+          requires:
+            - build-docker-image-staging
+      - push-docker-image: # Splitting the build and push to docker jobs
+          name: push-docker-image-prod
+          <<: *main_and_above
+          requires:
+            - build-docker-image-prod
       - hold:
           type: approval
-          filters:
-            branches:
-              only:
-                - main
-                - master
-                - /^release\/.*/
-      #- deploy-ssh-production:
-      #    requires:
-      #        - hold
-      #    filters:
-      #      branches:
-      #        only:
-      #         - main
-      #         - master
       - deploy-ssh-staging:
+          <<: *dev_only
           requires:
+            - push-docker-image-staging
             - hold
-          filters:
-            branches:
-              only:
-                - /^release\/.*/
+      - deploy-ssh-pre-production: # main branch is used to resolve the issue if 2 PRs are merged at the same time on main (~HEAD changed between the build and the merge)
+          <<: *main_only
+          requires:
+            - push-docker-image-prod
+            - hold
+      - deploy-ssh-production:
+          <<: *release_only
+          requires:
+            - push-docker-image-prod
+            - hold
 
-  staging_workflow:
-    jobs:
-      - build-setup
-      - metrics-phpmetrics:
-          requires:
-            - build-setup
-      - metrics-phploc:
-          requires:
-            - build-setup
-      - metrics-phpmd:
-          requires:
-            - build-setup
-        
-
-  container_workflow:
-    jobs:
-      - build-docker-image:
-          filters:
-            branches:
-              only:
-                - master
-                - main
-                - develop
-                - dev
-                - /^feature\/.*/
-                - /^release\/.*/
-                - /^hotfix\/.*/
-                - /^bugfix\/.*/
+  # container_workflow:
+  #   jobs:
+  #     - build-docker-image:
+  #         filters:
+  #           branches:
+  #             only:
+  #               - main
+  #               - dev
+  #               - /^release\/.*/
+  #               - /^hotfix\/.*/
+  #               - /^bugfix\/.*/
