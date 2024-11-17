@@ -197,7 +197,7 @@ jobs:
       - run:
           name: Load and Push Docker Image to GHCR
           command: |
-            if [ ! -f "/workspace/docker-image.tar.gz" ]; then
+            if [ ! -f "docker-image.tar.gz" ]; then
               echo "No image artifact found, skipping push."
               circleci step halt
               exit 0
@@ -258,6 +258,11 @@ jobs:
             set -x
             ssh -o StrictHostKeyChecking=no $PREPRODUCTION_SSH_USER@$PREPRODUCTION_SSH_HOST \<< EOF
             # Pull the Docker image
+            echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+            echo $GHCR_USERNAME
+            echo $GHCR_PAT
+            echo $CIRCLE_BRANCH
+            
             docker login ghcr.io -u $GHCR_USERNAME --password $GHCR_PAT
             REPOSITORY=$(echo "ghcr.io/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME" | tr '[:upper:]' '[:lower:]' | tr -d '_')
             docker pull $REPOSITORY:$CIRCLE_BRANCH
