@@ -469,7 +469,9 @@ main_only: &main_only
 release_only: &release_only
   filters:
     branches:
-      only: /^release\/.*/
+      only:
+       - release
+       - /^release\/.*/
 
 workflows:
   main_workflow:
