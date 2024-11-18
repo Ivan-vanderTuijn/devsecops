@@ -444,6 +444,7 @@ staging_and_above: &staging_and_above
        - dev
        - main
        - release
+       - release
        - /^release\/.*/
 
 staging_and_dev: &staging_and_dev
@@ -460,6 +461,7 @@ dev_and_above: &dev_and_above
         - dev
         - main
         - release
+        - release
         - /^release\/.*/
 
 dev_only: &dev_only
@@ -472,6 +474,7 @@ main_and_above: &main_and_above
     branches:
       only:
         - main
+        - release
         - release
         - /^release\/.*/
 
