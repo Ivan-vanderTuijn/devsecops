@@ -522,22 +522,6 @@ workflows:
           requires:
             - test-phpunit
       # Metrics jobs in parallel
-      - metrics-phpmetrics:
-          <<: *dev_only
-          requires:
-            - security-check-dependencies
-      - metrics-phploc:
-          <<: *dev_only
-          requires:
-            - security-check-dependencies
-      - metrics-phpmd:
-          <<: *dev_only
-          requires:
-            - security-check-dependencies
-      - metrics-php-doc-check:
-          <<: *dev_only
-          requires:
-            - security-check-dependencies
       - metrics-wrapper:
           <<: *dev_only
           requires:
