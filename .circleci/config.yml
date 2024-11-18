@@ -379,7 +379,6 @@ jobs:
           path: phpmd-report.txt
           destination: phpmd-report
 
-
   metrics-php-doc-check:
     executor: php-executor
     steps:
