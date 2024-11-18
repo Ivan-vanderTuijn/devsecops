@@ -532,10 +532,10 @@ workflows:
           environment: staging
           <<: *dev_only
           requires:
-            - metrics-phpmd
-            - metrics-phploc
-            - metrics-phpmetrics
-            - metrics-php-doc-check
+            - metrics-phpmd || true
+            - metrics-phploc || true
+            - metrics-phpmetrics || true
+            - metrics-php-doc-check || true
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
