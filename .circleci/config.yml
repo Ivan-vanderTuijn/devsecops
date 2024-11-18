@@ -249,7 +249,7 @@ jobs:
             echo "Starting new container..."
             docker run -d \
             --name $STAGING_CONTAINER_NAME \
-            -p 80:80 \
+            -p 8080:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
             $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
@@ -283,7 +283,7 @@ jobs:
             echo "Starting new container..."
             docker run -d \
             --name "$PREPRODUCTION_CONTAINER_NAME" \
-            -p 80:80 \
+            -p 8081:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
             $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
@@ -403,6 +403,7 @@ jobs:
       - store_artifacts:
           path: php-doc-check-report.txt
           destination: php-doc-check-report
+  
 
 commands:
   fetch-and-set-secrets:
