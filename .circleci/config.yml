@@ -181,6 +181,8 @@ jobs:
           docker_layer_caching: true
       - fetch-and-set-secrets:
           env: << parameters.environment >>
+      -fetch-and-set-secrets-all:
+          env: << parameters.environment >>
       - run:
           name: Build Docker Image
           command: |
@@ -424,6 +426,40 @@ commands:
             
             # Override APP_SECRET in .env file
             echo "APP_SECRET=\"$APP_SECRET\"" > .env
+
+commands:
+  fetch-and-set-secrets-all:
+    parameters:
+      env:
+        type: string
+    steps:
+      - run:
+          name: Fetch and Set All Secrets
+          command: |
+            # Environment and Workspace Slug
+            ENVIRONMENT=<< parameters.env >>
+            
+            # Fetch all secrets for the specified environment
+            RESPONSE=$(curl --silent --request GET \
+              --url "https://us.infisical.com/api/v3/secrets/raw?environment=${ENVIRONMENT}&workspaceSlug=${WORKSPACE_SLUG}" \
+              --header "Authorization: Bearer ${INFISICAL_TOKEN}")
+            
+            # Check if the response is valid
+            if [ "$(echo "$RESPONSE" | jq -r '.status')" != "success" ]; then
+              echo "Error: Failed to fetch secrets. Response: $RESPONSE"
+              exit 1
+            fi
+            
+            # Extract and set each secret as an environment variable
+            echo "$RESPONSE" | jq -r '.secrets[] | "\(.secretName)=\(.secretValue)"' > .env
+
+            # Optionally export variables for immediate use
+            while IFS= read -r line; do
+              export "$line"
+            done < .env
+
+            echo "All secrets have been set in .env and exported to the environment."
+
 
 staging_and_above: &staging_and_above
   filters:
