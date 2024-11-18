@@ -179,9 +179,7 @@ jobs:
       - checkout
       - setup_remote_docker:
           docker_layer_caching: true
-      - fetch-and-set-secrets:
-          env: << parameters.environment >>
-      -fetch-and-set-secrets-all:
+      - fetch-and-set-secrets-all:
           env: << parameters.environment >>
       - run:
           name: Build Docker Image
