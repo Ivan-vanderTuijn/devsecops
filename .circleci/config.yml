@@ -426,39 +426,12 @@ commands:
             # Fetch the APP_SECRET for the specified environment
             APP_SECRET=$(infisical secret get APP_SECRET --env=<< parameters.env >>)
             
-            # Check if the response is valid
-            if [ "$(echo "$RESPONSE" | jq -r '.status')" != "success" ]; then
-              echo "Error: Failed to fetch secrets. Response: $RESPONSE"
-              exit 1
-            fi
-            
-
-            # Ensure the .env file exists
-            if [ ! -f .env ]; then
-              echo "# .env file created by CircleCI job" > .env
-            fi
-
-            # Loop through secrets and update or add them in .env
-            echo "$RESPONSE" | jq -r '.secrets[] | "\(.secretName)=\(.secretValue)"' | while IFS= read -r secret; do
-              key=$(echo "$secret" | cut -d '=' -f1)
-              value=$(echo "$secret" | cut -d '=' -f2-)
-              
-              # Check if the key exists in .env
-              if grep -q "^${key}=" .env; then
-                # Replace the existing value
-                sed -i "s|^${key}=.*|${key}=${value}|" .env
-              else
-                # Add the key-value pair if it doesn't exist
-                echo "${key}=${value}" >> .env
-              fi
-            done
-
             # Update or create .env file with the new APP_SECRET
-            # if [ -f .env ]; then
-            #   sed -i "/^APP_SECRET=/c\APP_SECRET=${APP_SECRET}" .env
-            # else
-            #   echo "APP_SECRET=${APP_SECRET}" > .env
-            # fi
+            if [ -f .env ]; then
+              sed -i "/^APP_SECRET=/c\APP_SECRET=${APP_SECRET}" .env
+            else
+              echo "APP_SECRET=${APP_SECRET}" > .env
+            fi
 
 
   #                                   f  d  m
