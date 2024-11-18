@@ -404,17 +404,16 @@ jobs:
           destination: php-doc-check-report
   
   metrics-wrapper:
-  docker:
-    - image: cimg/base:stable
-  steps:
-    - checkout
-    - run:
-        name: Run PHP Metrics
-        command: |
-          phpmetrics || true
-          phploc || true
-          phpmd || true
-          php-doc-check || true
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Run PHP Metrics
+          command: |
+            phpmetrics || true
+            phploc || true
+            phpmd || true
+            php-doc-check || true
 
 commands:
   fetch-and-set-secrets:
