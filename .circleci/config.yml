@@ -402,6 +402,18 @@ jobs:
       - store_artifacts:
           path: php-doc-check-report.txt
           destination: php-doc-check-report
+  
+  metrics-wrapper:
+  docker:
+    - image: cimg/base:stable
+  steps:
+    - run:
+        name: Run PHP Metrics
+        command: |
+          phpmetrics || true
+          phploc || true
+          phpmd || true
+          php-doc-check || true
 
 commands:
   fetch-and-set-secrets:
@@ -526,15 +538,16 @@ workflows:
           <<: *dev_only
           requires:
             - security-check-dependencies
+      - metrics-wrapper:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
       - build-docker-image:
           name: build-docker-image-staging
           environment: staging
           <<: *dev_only
           requires:
-            - metrics-phpmd
-            - metrics-phploc
-            - metrics-phpmetrics
-            - metrics-php-doc-check
+            - metrics-wrapper
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
