@@ -21,6 +21,7 @@ Dockerfile
 docker-compose.override.yml
 docker/docker-compose.yml
 docker
+docs
 
 # Miscellanenous
 .editorconfig
