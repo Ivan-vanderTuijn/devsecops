@@ -453,6 +453,7 @@ staging_and_above: &staging_and_above
        - /^feature\/.*/
        - dev
        - main
+       - release
        - /^release\/.*/
 
 staging_and_dev: &staging_and_dev
@@ -468,6 +469,7 @@ dev_and_above: &dev_and_above
       only:
         - dev
         - main
+        - release
         - /^release\/.*/
 
 dev_only: &dev_only
@@ -480,6 +482,7 @@ main_and_above: &main_and_above
     branches:
       only:
         - main
+        - release
         - /^release\/.*/
 
 main_only: &main_only
@@ -490,7 +493,9 @@ main_only: &main_only
 release_only: &release_only
   filters:
     branches:
-      only: /^release\/.*/
+      only:
+      - release
+      - /^release\/.*/
 
 workflows:
   main_workflow:
