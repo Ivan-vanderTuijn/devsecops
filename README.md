@@ -8,4 +8,4 @@ image from /docs/assets/cicd.png
 
 ## CI/CD Pipeline schema
 
-![CI/CD Pipeline](/docs/assets/cicd.png)
+![CI/CD Pipeline](/docs/assets/cicdv2.png)
