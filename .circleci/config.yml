@@ -283,7 +283,7 @@ jobs:
             echo "Starting new container..."
             docker run -d \
             --name "$PREPRODUCTION_CONTAINER_NAME" \
-            -p 8081:80 \
+            -p 80:80 \
             -v "$(pwd)/volume/database:/var/www/html/database" \
             $DOCKER_REPOSITORY:$CIRCLE_BRANCH || exit 1
             EOF
@@ -403,19 +403,6 @@ jobs:
       - store_artifacts:
           path: php-doc-check-report.txt
           destination: php-doc-check-report
-
-  metrics-wrapper:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Run PHP Metrics
-          command: |
-            phpmetrics || true
-            phploc || true
-            phpmd || true
-            php-doc-check || true
-  
 
 commands:
   fetch-and-set-secrets:
@@ -540,16 +527,15 @@ workflows:
           <<: *dev_only
           requires:
             - security-check-dependencies
-      - metrics-metrics:
-          <<: *dev_only
-          requires:
-            - security-check-dependencies
       - build-docker-image:
           name: build-docker-image-staging
           environment: staging
           <<: *dev_only
           requires:
-            - metrics-wrapper
+            - metrics-phpmd
+            - metrics-phploc
+            - metrics-phpmetrics
+            - metrics-php-doc-check
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
