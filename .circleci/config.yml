@@ -540,6 +540,10 @@ workflows:
           <<: *dev_only
           requires:
             - security-check-dependencies
+      - metrics-metrics:
+          <<: *dev_only
+          requires:
+            - security-check-dependencies
       - build-docker-image:
           name: build-docker-image-staging
           environment: staging
