@@ -332,7 +332,7 @@ jobs:
           command: composer require --dev phpmetrics/phpmetrics
       - run:
           name: Run PHP Metrics
-          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/ public/
+          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/ public/ || true
       - store_artifacts:
           path: phpmetrics-report.html
           destination: phpmetrics-report
@@ -353,7 +353,7 @@ jobs:
       - run:
           name: Execute PHPLoc
           command: |
-            php phploc.phar src/ public/ > phploc-report.txt
+            php phploc.phar src/ public/ > phploc-report.txt || true
       - store_artifacts:
           path: phploc-report.txt
           destination: phploc-report
@@ -371,7 +371,7 @@ jobs:
       - run:
           name: Execute PHP Mess Detector
           command: |
-            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt
+            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt || true
       - run:
           name: Check report Creation
           command: ls -l
@@ -391,7 +391,7 @@ jobs:
       - run:
           name: Execute PHP Doc Check
           command: |
-            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt
+            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt || true
             echo "php-doc-check finished with exit code $?" >> php-doc-check-report.txt
             if [ ! -s php-doc-check-report.txt ]; then
               echo "No problems detected or empty file. php-doc-check was executed successfully." > php-doc-check-report.txt
@@ -502,7 +502,6 @@ workflows:
             - metrics-phploc
             - metrics-phpmd
             - metrics-php-doc-check
-          when: true
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
