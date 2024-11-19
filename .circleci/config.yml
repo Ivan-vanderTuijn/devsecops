@@ -332,7 +332,7 @@ jobs:
           command: composer require --dev phpmetrics/phpmetrics
       - run:
           name: Run PHP Metrics
-          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/ public/
+          command: ./vendor/bin/phpmetrics --report-html=phpmetrics-report.html src/ public/ || true
       - store_artifacts:
           path: phpmetrics-report.html
           destination: phpmetrics-report
@@ -353,7 +353,7 @@ jobs:
       - run:
           name: Execute PHPLoc
           command: |
-            php phploc.phar src/ public/ > phploc-report.txt
+            php phploc.phar src/ public/ > phploc-report.txt || true
       - store_artifacts:
           path: phploc-report.txt
           destination: phploc-report
@@ -371,7 +371,7 @@ jobs:
       - run:
           name: Execute PHP Mess Detector
           command: |
-            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt
+            php phpmd.phar src/ public/ text cleancode,codesize,controversial,design,naming > phpmd-report.txt || true
       - run:
           name: Check report Creation
           command: ls -l
@@ -391,7 +391,7 @@ jobs:
       - run:
           name: Execute PHP Doc Check
           command: |
-            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt
+            php php-doc-check.phar src/ --verbose > php-doc-check-report.txt || true
             echo "php-doc-check finished with exit code $?" >> php-doc-check-report.txt
             if [ ! -s php-doc-check-report.txt ]; then
               echo "No problems detected or empty file. php-doc-check was executed successfully." > php-doc-check-report.txt
@@ -402,18 +402,6 @@ jobs:
       - store_artifacts:
           path: php-doc-check-report.txt
           destination: php-doc-check-report
-  
-  metrics-wrapper:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - run:
-          name: Run PHP Metrics
-          command: |
-            phpmetrics || true
-            phploc || true
-            phpmd || true
-            php-doc-check || true
 
 commands:
   fetch-and-set-secrets:
@@ -508,16 +496,31 @@ workflows:
           requires:
             - test-phpunit
       # Metrics jobs in parallel
-      - metrics-wrapper:
+      - metrics-php-doc-check:
           <<: *dev_only
           requires:
-            - security-check-dependencies
+              - security-check-dependencies
+      - metrics-phploc:
+          <<: *dev_only
+          requires:
+              - security-check-dependencies
+      - metrics-phpmd:
+          <<: *dev_only
+          requires:
+              - security-check-dependencies
+      - metrics-phpmetrics:
+          <<: *dev_only
+          requires:
+              - security-check-dependencies
       - build-docker-image:
           name: build-docker-image-staging
           environment: staging
           <<: *dev_only
           requires:
-            - metrics-wrapper
+            - metrics-php-doc-check
+            - metrics-phploc
+            - metrics-phpmd
+            - metrics-phpmetrics
       - build-docker-image:
           name: build-docker-image-prod
           environment: prod
